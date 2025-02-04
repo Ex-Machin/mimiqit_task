@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "767681400570",
+    "project_id": "something-unique-abd05",
+    "storage_bucket": "something-unique-abd05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:767681400570:android:3740567252d13207ef8343",
+        "android_client_info": {
+          "package_name": "com.example.mimiqit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "767681400570-3j816rsi2mc319l40siakssmr4eh8lhj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7WfRon9pl9o2EK3Zy8e0de_7q3tOH9gM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "767681400570-3j816rsi2mc319l40siakssmr4eh8lhj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,151 +1,138 @@
-import 'package:english_words/english_words.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:mimiqit/firebase_options.dart';
 
-void main() {
-  runApp(MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
+  runApp(DanceStudioApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+
+class DanceStudioApp extends StatelessWidget {
+  const DanceStudioApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
-      child: MaterialApp(
-        title: 'Namer App',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        ),
-        home: MyHomePage(),
+    return MaterialApp(
+      title: 'Dance Studio Finder',
+      theme: ThemeData(
+        primarySwatch: Colors.amber,
       ),
+      home: const StudioListPage(),
     );
   }
 }
+class StudioListPage extends StatefulWidget {
+  const StudioListPage({super.key});
 
-class MyAppState extends ChangeNotifier {
-  var current = WordPair.random();
-
-  void getNext() {
-    current = WordPair.random();
-    notifyListeners();
-  }
-
-  var favorites = <WordPair>[];
-
-  void toggleFavorite() {
-    if (favorites.contains(current)){
-      favorites.remove(current);
-    } else {
-      favorites.add(current);
-    }
-    notifyListeners();
-  }
-}
-
-// ...
-
-class MyHomePage extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _StudioListPageState createState() => _StudioListPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-
-  var selectedIndex = 0;
+class _StudioListPageState extends State<StudioListPage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  String searchQuery = '';
+  String selectedStyle = 'All';
 
   @override
   Widget build(BuildContext context) {
-    Widget page;
-    
-    switch (selectedIndex) {
-      case 0:
-        page = GeneratorPage();
-      case 1:
-        page = FavoritesPage();
-      default:
-      throw UnimplementedError("no widget for $selectedIndex");
-    } 
-    
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Scaffold(
-          body: Row(
-            children: [
-              SafeArea(
-                child: NavigationRail(
-                  extended: constraints.maxWidth >= 600,
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.favorite),
-                      label: Text('Favorites'),
-                    ),
-                  ],
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (value) {
-                    setState(() {
-                      selectedIndex = value;
-                    });
-                  },
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: page,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    );
-  }
-}
-
-class GeneratorPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
-    IconData icon;
-    if (appState.favorites.contains(pair)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dance Studios'),
+      ),
+      body: Column(
         children: [
-          BigCard(pair: pair),
-          SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite();
-                },
-                icon: Icon(icon),
-                label: Text('Like'),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                hintText: 'Enter studio name',
+                prefixIcon: Icon(Icons.search),
               ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  appState.getNext();
-                },
-                child: Text('Next'),
-              ),
-            ],
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DropdownButton<String>(
+              value: selectedStyle,
+              items: const [
+                DropdownMenuItem(value: 'All', child: Text('All Styles')),
+                DropdownMenuItem(value: 'Ballet', child: Text('Ballet')),
+                DropdownMenuItem(value: 'Hip-Hop', child: Text('Hip-Hop')),
+                DropdownMenuItem(value: 'Salsa', child: Text('Salsa')),
+                DropdownMenuItem(value: 'Contemporary', child: Text('Contemporary')),
+                DropdownMenuItem(value: 'Jazz', child: Text('Jazz')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  selectedStyle = value!;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              // Fetch data from Firestore
+              stream: _firestore.collection('studios').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No studios found.'));
+                }
+
+                // Filter studios based on search query and selected style
+                final filteredStudios = snapshot.data!.docs.where((doc) {
+                  final studio = doc.data() as Map<String, dynamic>;
+                  final nameMatch = studio['name']
+                      .toString()
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase());
+                  final styleMatch =
+                      selectedStyle == 'All' || studio['style'] == selectedStyle;
+                  return nameMatch && styleMatch;
+                }).toList();
+
+                return ListView.builder(
+                  itemCount: filteredStudios.length,
+                  itemBuilder: (context, index) {
+                    final studio = filteredStudios[index].data() as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(studio['name']),
+                      subtitle: Text(studio['address']),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StudioInfoPage(
+                              name: studio['name'],
+                              address: studio['address'],
+                              description: studio['description'],
+                              style: studio['style'],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -153,57 +140,39 @@ class GeneratorPage extends StatelessWidget {
   }
 }
 
-class FavoritesPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+class StudioInfoPage extends StatelessWidget {
+  final String name;
+  final String address;
+  final String description;
+  final String style;
 
-    if (appState.favorites.isEmpty) {
-      return Center(
-        child: Text('No favorites yet.'),
-      );
-    }
-
-    return ListView(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Text('You have '
-              '${appState.favorites.length} favorites:'),
-        ),
-        for (var pair in appState.favorites)
-          ListTile(
-            leading: Icon(Icons.favorite),
-            title: Text(pair.asLowerCase),
-          ),
-      ],
-    );
-  }
-}
-
-class BigCard extends StatelessWidget {
-  const BigCard({
+  const StudioInfoPage({
     super.key,
-    required this.pair,
+    required this.name,
+    required this.address,
+    required this.description,
+    required this.style,
   });
 
-  final WordPair pair;
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final style = theme.textTheme.displayMedium!.copyWith(
-      color: theme.colorScheme.onPrimary,
-    );
-
-    return Card(
-      color: theme.colorScheme.secondary,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(
-          "${pair.first} ${pair.second}",
-          style: style,
-          semanticsLabel: "${pair.first} +${pair.second}",
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(name),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Name: $name', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text('Address: $address', style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 10),
+            Text('Description: $description', style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 10),
+            Text('Style: $style', style: const TextStyle(fontSize: 16)),
+          ],
         ),
       ),
     );
