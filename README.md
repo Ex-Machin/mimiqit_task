@@ -1,7 +1,6 @@
 
 ## Video Demonstration
-
-[![]([https://github.com/Ex-Machin/mimiqit_task/Video_demonstration.gif](https://github.com/Ex-Machin/mimiqit_task/blob/main/Video_demonstration.gif))](https://github.com/Ex-Machin/mimiqit_task/blob/main/Video_demonstration.gif)
+![til](./Video_demonstration.gif)
 
 ## What was done
 
