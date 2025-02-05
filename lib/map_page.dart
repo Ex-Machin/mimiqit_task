@@ -6,7 +6,7 @@ import 'studio_info_page.dart'; // Import the StudioInfoPage
 
 
 class MapPage extends StatefulWidget {
-  const MapPage({Key? key}) : super(key: key);
+  const MapPage({super.key});
 
   @override
   _MapPageState createState() => _MapPageState();

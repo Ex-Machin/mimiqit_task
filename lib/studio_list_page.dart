@@ -4,7 +4,7 @@ import 'studio_provider.dart'; // Import the StudioProvider
 import 'studio_info_page.dart'; // Import the StudioInfoPage
 
 class StudioListPage extends StatefulWidget {
-  const StudioListPage({Key? key}) : super(key: key);
+  const StudioListPage({super.key});
 
   @override
   _StudioListPageState createState() => _StudioListPageState();
