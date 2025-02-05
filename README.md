@@ -11,7 +11,8 @@ https://vimeo.com/1053739286?share=copy
 4. Map on tap navigation to studio info page
 5. Filtering by name and style
 
-Additionally
+### Additionally: 
+
 6. The data is fetched from firestore database
 7. Book now button
 
