@@ -16,7 +16,7 @@ https://vimeo.com/1053739286?share=copy
 6. The data is fetched from firestore database
 7. "Book now" button
 
-## How to test itsels
+## How to test
 
 1. Get a Google API key
 2. Paste it it in
